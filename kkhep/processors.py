@@ -1,0 +1,69 @@
+import coffea.processor
+import coffea.hist
+import numpy as np
+
+def dataset_normalization(xsecdb, dsid):
+    """Calculates the dataset normaliation for DSID using values from `xsecdb`
+    as cross-section * filter efficiency. If DSID is not in `xsecdb`, then
+    return 1.
+    """
+    if dsid in xsecdb.index:
+        return xsecdb.loc[dsid]['crossSection'] * xsecdb.loc[dsid]['genFiltEff']
+    else:
+        return 1.0
+
+class HistProcessor(coffea.processor.ProcessorABC):
+    """ Generic processor for making histograms.
+
+    Manages `self.accumulator` dict with histograms. The actions taken are:
+     - automated grouping of samples
+     - normalization
+
+    ## Grouping
+    All histograms in `self.accumulator` are grouped using
+    `coffea.hist.Hist.group` as part of the post-processing stage using the 
+    group definition in `self.group`. This step is done after normalizing each
+    sample independently.
+
+    ## Normalization
+    All histograms in `self.accumulator` are normalized in the post-processing
+    stage to a cross-section defined in `self.xsecdb` using
+    `dataset_normalization`. The denominator is is the sum of weights of all
+    events (first element in `mcEventWeights` branch.)
+    """
+    def __init__(self, xsecdb=None, group=None):
+        """
+        Parameters
+          - xsecdb (pandas.DataFrame): cross-section database
+          - group (dict): group definition for histograms
+        """
+        self.xsecdb=xsecdb
+        self.group=group
+        self.accumulator = coffea.processor.dict_accumulator({
+            'cutflow': coffea.processor.defaultdict_accumulator(float)
+        })
+
+    def process(self, events):
+        """
+        Create accumulator identity and add to the `cutflow` sum.
+        """
+        output = self.accumulator.identity()
+        dataset = events.metadata['dataset']
+        
+        output['cutflow'][dataset] += np.sum(events['mcEventWeights'][:,0])
+
+        return output
+    
+    def postprocess(self, accumulator):
+        """
+        Normalization and grouping.
+        """
+        norm=dict(map(lambda i: (i[0], dataset_normalization(self.xsecdb, int(i[0]))/i[1]), accumulator['cutflow'].items()))
+
+        dataset=coffea.hist.Cat("dataset", "Dataset")
+        for key in accumulator:
+            if type(accumulator[key]) is coffea.hist.Hist:
+                accumulator[key].scale(norm, axis='dataset')
+                if self.group is not None:
+                    accumulator[key]+=accumulator[key].group('dataset',dataset,self.group)
+        return accumulator
