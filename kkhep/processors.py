@@ -31,12 +31,14 @@ class HistProcessor(coffea.processor.ProcessorABC):
     `dataset_normalization`. The denominator is is the sum of weights of all
     events (first element in `mcEventWeights` branch.)
     """
-    def __init__(self, xsecdb=None, group=None):
+    def __init__(self, weight_column=None, xsecdb=None, group=None):
         """
         Parameters
+          - weight_column (str): name of the column to use as event weight
           - xsecdb (pandas.DataFrame): cross-section database
           - group (dict): group definition for histograms
         """
+        self.weight_column = weight_column
         self.xsecdb=xsecdb
         self.group=group
         self.accumulator = coffea.processor.dict_accumulator({
@@ -49,21 +51,27 @@ class HistProcessor(coffea.processor.ProcessorABC):
         """
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
-        
-        output['cutflow'][dataset] += np.sum(events['mcEventWeights'][:,0])
+
+        if self.weight_column is not None:
+            output['cutflow'][dataset] += np.sum(events['mcEventWeights'][:,0])
+        else:
+            output['cutflow'][dataset] += len(events)
 
         return output
-    
+
     def postprocess(self, accumulator):
         """
         Normalization and grouping.
         """
-        norm=dict(map(lambda i: (i[0], dataset_normalization(self.xsecdb, int(i[0]))/i[1]), accumulator['cutflow'].items()))
+        norm=None
+        if self.xsecdb is not None:
+            norm=dict(map(lambda i: (i[0], dataset_normalization(self.xsecdb, int(i[0]))/i[1]), accumulator['cutflow'].items()))
 
         dataset=coffea.hist.Cat("dataset", "Dataset")
         for key in accumulator:
             if type(accumulator[key]) is coffea.hist.Hist:
-                accumulator[key].scale(norm, axis='dataset')
+                if norm is not None:
+                    accumulator[key].scale(norm, axis='dataset')
                 if self.group is not None:
                     accumulator[key]+=accumulator[key].group('dataset',dataset,self.group)
         return accumulator
