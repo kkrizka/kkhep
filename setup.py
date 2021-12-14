@@ -10,5 +10,5 @@ setuptools.setup(
         'coffea',
         'pyyaml'
       ],
-    packages=['kkhep']
+    packages=['kkcoffea','kkplot','kkdata','kkconfig']
 )
