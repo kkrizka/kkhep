@@ -66,12 +66,14 @@ def efficiency(bins, total, passed, ax=plt, **kwargs):
     b = total - passed
     yerr[1,:]=beta.ppf(1-alpha, a, b)
     yerr[1,:]=np.nan_to_num(yerr[1,:], nan=1.)
+    yerr[1,passed==0]=0.
 
     # lower
     a = passed
     b = total - passed + 1
     yerr[0,:]=beta.ppf(  alpha, a, b)
     yerr[0,:]=np.nan_to_num(yerr[0,:], nan=0.)
+    yerr[0,passed==0]=0.
 
     # normalize
     yerr=np.abs(yerr-eff)
