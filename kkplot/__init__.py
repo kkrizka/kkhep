@@ -20,12 +20,11 @@ def yeff(ylim=1.1, ax=plt):
 
     ticks(ax.yaxis, 0.1, 0.02)
 
-def ticks(axis, major, minor, majorfmt='{x:.1f}'):
+def ticks(axis, major, minor):
     """
     Setup major/minor ticks
     """
     axis.set_major_locator(MultipleLocator(major))
-    axis.set_major_formatter(majorfmt)
     axis.set_minor_locator(MultipleLocator(minor))
 
 def hist(bins, values, ax=plt, **kwargs):
