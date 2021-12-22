@@ -1,4 +1,4 @@
-# KK HEP
+# Karol Krizka's HEP
 Collection of helpful tools to make plots for High Energy Physics.
 
 ## Packages
