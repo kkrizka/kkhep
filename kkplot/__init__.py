@@ -20,6 +20,18 @@ def yeff(ylim=1.1, ax=plt):
 
     ticks(ax.yaxis, 0.1, 0.02)
 
+def xticks(major, minor, ax=None):
+    """ Setup major/minor ticks for the x axis """
+    if ax is None:
+        ax=plt.gca()
+    ticks(ax.xaxis, major, minor)
+
+def yticks(major, minor, ax=None):
+    """ Setup major/minor ticks for the y axis """
+    if ax is None:
+        ax=plt.gca()
+    ticks(ax.yaxis, major, minor)
+
 def ticks(axis, major, minor):
     """
     Setup major/minor ticks
