@@ -1,15 +1,21 @@
 """
-Defines a global variable called `config` that is filled with settings
-corresponding to the analysis package configuration. 
-
-The `config` variable isinitialized with the contents of `.kkhep.yaml` file if
-it exists. It is set to `None` otherwise.
+Functions for managing local configurations for a project.
 """
 
 import yaml
 import os
 
-config=None
-if os.path.exists('.kkhep.yaml'):
-    config = yaml.load(open('.kkhep.yaml'), Loader=yaml.FullLoader)
+def load_settings(cfgpath, env):
+    """
+    Loads the contents of the `cfgpath` YAML file and updates the contents of
+    `env` with the values.
+
+    If `cfgpath` does not exists, then the function silently returns. This is
+    when no override of the settings is desired.
+    """
+    if not os.path.exists(cfgpath):
+        return # no local configuration found
+    cfg = yaml.safe_load(open(cfgpath))
+
+    env.update(cfg)
 

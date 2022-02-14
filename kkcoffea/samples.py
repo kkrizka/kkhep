@@ -23,11 +23,13 @@ class SampleManager:
     """
     Collection of `Sample` and `MultiSample` objects.
     """
-    def __init__(self, sampledef=None):
+    def __init__(self, sampledef=None, datadir="."):
         """
         Parameters:
             - sampledef (str): path to sample definition file
+            - datadir (str): path where all data files are located
         """
+        self.datadir=datadir
         self.samples={}
         if sampledef is not None:
             self.add_sampledef(sampledef)
@@ -61,7 +63,7 @@ class SampleManager:
         for samplename,sampledata in data.items():
             samplename=str(samplename)
             if 'data' in sampledata:
-                sample=Sample(data=sampledata['data'])
+                sample=Sample(data=[self.datadir+'/'+path for path in sampledata['data']])
                 self.samples[samplename]=sample
             else: # this is a multisample
                 subsamples={}
