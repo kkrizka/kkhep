@@ -39,19 +39,24 @@ class SampleManager:
         Add a sample definition to the manager. A sample definition is a YAML
         file that contains sample and multisample definitions. The parsed
         result is appended to `this.samples`.
-        
+
+        The contents of keys other than `samples` are added as `self` members.
+
         An example of the syntax is.
 
         ```yaml
-        samplename:
-            data:
+        config1: value1
+        samples:
+            - dsid: 123456
+              data:
                 - mysample.root
-        multisamplename:
-            sample0:
-                data:
+            - name: multisample1:
+              samples:
+                - dsid: 900000
+                  data:
                     - file0.root
-            sample1:
-                data:
+                - dsid: 900001
+                  data:
                     - file1.root
         ```
 
@@ -60,18 +65,46 @@ class SampleManager:
         """
         with open(sampledef) as fh:
             data=yaml.safe_load(fh)
-        for samplename,sampledata in data.items():
-            samplename=str(samplename)
-            if 'data' in sampledata:
-                sample=Sample(data=[self.datadir+'/'+path for path in sampledata['data']])
+
+        # Store metadata
+        for k in data.keys():
+            if k=='samples':
+                continue # skip, this is special
+            setattr(self, k, data[k])
+
+        # Loop over all samples and add them
+        for sample in data['samples']:
+            if 'samples' not in sample: # this is a single sample
+                samplename,sample=self._create_sample(sample)
                 self.samples[samplename]=sample
             else: # this is a multisample
+                samplename=sample['name']
                 subsamples={}
-                for subname,subdata in sampledata.items():
-                    subname=str(subname)
-                    subsamples[subname]=Sample(**subdata)
+                for subsample in sample['samples']:
+                    subsamplename,subsample=self._create_sample(subsample)
+                    subsamples[subsamplename]=subsample
                 sample=MultiSample(subsamples)
                 self.samples[samplename]=sample
+
+    def _create_sample(self, sample):
+        """
+        Creates a new `Sample` object based on a dictionary sample definition.
+
+
+        Returns: `samplename`, `sampleobj`
+        """
+
+        # Get the name of the sample
+        samplename=None
+        if 'dsid' in sample:
+            samplename=str(sample['dsid'])
+        if 'name' in sample:
+            samplename=sample['name']
+
+        # Create the sample object
+        sampleobj=Sample(data=[self.datadir+'/'+path for path in sample['data']])
+
+        return samplename, sampleobj
 
     def fileset(self):
         """
