@@ -1,6 +1,8 @@
 import coffea.processor
 import coffea.hist
+
 import numpy as np
+import awkward as ak
 
 def dataset_normalization(xsecdb, dsid):
     """Calculates the dataset normaliation for DSID using values from `xsecdb`
@@ -45,6 +47,30 @@ class HistProcessor(coffea.processor.ProcessorABC):
             'cutflow': coffea.processor.defaultdict_accumulator(float)
         })
 
+    def weights(self, events, widx=0):
+        """
+        Return a list of weights for the supplied events.
+
+        The weights are determined using the following procedure:
+         1. `events[self.weight_column]` if the weight column is scalar
+         2. `events[self.weight_column][:,widx]` if the weight column is a list
+         3. `None` otherwise
+        """
+        # No defined weight column
+        if self.weight_column is None:
+            return None
+
+        # Scalar weight column
+        weight_column=events[self.weight_column]
+        if type(weight_column.type.type) is ak._ext.PrimitiveType:
+            return weight_column
+
+        # List weight column (ie: alternate weights)
+        if type(weight_column.type.type) is ak._ext.ListType:
+            return weight_column[:,widx]
+
+        return None
+
     def process(self, events):
         """
         Create accumulator identity and add to the `cutflow` sum.
@@ -53,7 +79,7 @@ class HistProcessor(coffea.processor.ProcessorABC):
         dataset = events.metadata['dataset']
 
         if self.weight_column is not None:
-            output['cutflow'][dataset] += np.sum(events['mcEventWeights'][:,0])
+            output['cutflow'][dataset] += np.sum(self.weights(events))
         else:
             output['cutflow'][dataset] += len(events)
 
