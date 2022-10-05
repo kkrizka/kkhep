@@ -1,14 +1,39 @@
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.ticker import MultipleLocator
 
 import numpy as np
 from scipy.stats import beta
 
-def subplot_ratio():
+def subplot_ratio(nrows=1,ncols=1,**kwargs):
     """
     Create a subplot with dimensions useful for making ratio plots.
+
+    The figure is sized such that each ratio plot pair takes up the same area
+    as it would alone.
+
+    Parameters
+    ----------
+    nrows : int
+        Number of ratio plot pairs in the vertical direction.
+    ncols : int
+        Number of ratio plot pairs in the horizontal direction.
+    **kwargs
+        Passed to the `plt.subplots` call.
     """
-    fig, ax=plt.subplots(2,1,sharex=True,squeeze=True,gridspec_kw={'height_ratios':(2,1),'hspace':0.1})
+
+    left=mpl.rcParams['figure.subplot.left']/ncols
+    right=mpl.rcParams['figure.subplot.right']/ncols
+
+    figsize=mpl.rcParams['figure.figsize']
+    figsize[0]*=ncols
+    figsize[1]*=nrows
+
+    fig, ax=plt.subplots(2*nrows,1*ncols,
+                        sharex=True,squeeze=True,
+                        gridspec_kw={'height_ratios':(2,1)*nrows,'hspace':0.1,'left':left,'right':right,'wspace':0.05},
+                        figsize=kwargs.pop('figsize',figsize),
+                        **kwargs)
     return fig, ax
 
 def yeff(ylim=1.1, ax=plt):
